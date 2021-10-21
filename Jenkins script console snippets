@@ -1,0 +1,74 @@
+
+//in a list of jobs, to change a job's parameter to required?
+// https://stackoverflow.com/questions/58104366/is-there-a-way-in-a-list-of-jobs-to-change-a-jobs-parameter-to-required
+
+def instance = hudson.model.Hudson.instance;
+def allJobs = instance.getView("All");
+
+allJobs.items.each {
+
+    prop = it.getProperty(ParametersDefinitionProperty.class)
+    if(prop != null) {
+        for(param in prop.getParameterDefinitions()) {
+            try {
+              if(param.name.equals('NAME')){
+                println(it.name + ":" + param.name + " " + param.defaultValue)
+                if(!param.defaultValue.trim()){
+                    println("default value is blank")
+                }
+              }
+
+            }
+            catch(Exception e) {
+              println e
+            }
+        }
+    }
+}
+
+
+//////////////////////////////////
+// How to delete build parameter from all jobs?
+// https://support.cloudbees.com/hc/en-us/articles/216688637-How-to-delete-build-parameter-from-all-jobs-
+
+import hudson.model.*
+
+  recurseChildren(Hudson.instance.items)
+
+  def recurseChildren(items) {
+    items.each { item ->
+      if (item.class.canonicalName != 'com.cloudbees.hudson.plugins.folder.Folder') {
+        props = item.getProperty(ParametersDefinitionProperty.class)
+        if (props != null) {
+          props.getParameterDefinitions().removeAll { 'MY_BUILD_PARAM' == it.name }
+        }
+      } else {
+          recurseChildren(((com.cloudbees.hudson.plugins.folder.Folder) item).getItems())  
+      }
+    }
+  }
+  
+  
+  ///////////////////////////////////////////////////////////
+  // Groovy to list all jobs
+  // https://support.cloudbees.com/hc/en-us/articles/226941767-groovy-to-list-all-jobs#
+  // Go to Script Console under Manage Jenkins, this script will print the name of all jobs including jobs inside of a folder and the folders themselves:
+
+Jenkins.instance.getAllItems(AbstractItem.class).each {
+    println it.fullName + " - " + it.class
+};
+//This script will print the name of all jobs including jobs inside of a folder, but not the folders themselves.
+
+Jenkins.instance.getAllItems(Job.class).each{ 
+    println it.name + " - " + it.class
+}
+//This script will recursively print the name of all jobs implementing the AbstractProject class, i.e. Freestyle and Maven jobs.
+
+Jenkins.instance.getAllItems(AbstractProject.class).each {it ->
+    println it.fullName;
+}
+// This script will recursively print the name of all the Multibranch jobs.
+
+Jenkins.instance.getAllItems(org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject).each {it ->
+    println it.fullName;
+}
